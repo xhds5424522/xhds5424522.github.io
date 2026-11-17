@@ -422,7 +422,9 @@ footer{
           if (!m || typeof m !== 'object') continue;
           var t = String(m.t || '').slice(0, 300);
           if (!t) continue;
-          out.push({ n: String(m.n || '匿名').slice(0, 16), t: t, c: Number(m.c) || o.time * 1000 });
+          var it = { n: String(m.n || '匿名').slice(0, 16), t: t, c: Number(m.c) || o.time * 1000 };
+          if (m.p) it.p = 1;
+          out.push(it);
         }
         return out;
       })
@@ -432,7 +434,14 @@ footer{
   function merge(a, b) {
     var map = {}, out = [], i, k, it;
     for (i = 0; i < a.length; i++) { it = a[i]; if (!it || !it.t) continue; map[key(it)] = it; }
-    for (i = 0; i < b.length; i++) { it = b[i]; if (!it || !it.t) continue; map[key(it)] = it; }
+    for (i = 0; i < b.length; i++) {
+      it = b[i];
+      if (!it || !it.t) continue;
+      k = key(it);
+      /* 中继那份不一定带重点标记，历史那份带了就留住，别被覆盖掉 */
+      if (map[k] && map[k].p && !it.p) it.p = 1;
+      map[k] = it;
+    }
     for (k in map) if (Object.prototype.hasOwnProperty.call(map, k)) out.push(map[k]);
     out.sort(function (x, y) { return tsOf(y.c) - tsOf(x.c); });
     return out.slice(0, KEEP);
