@@ -239,7 +239,8 @@ footer{
 
   /* 历史存档在公开仓库里；最近 12 小时的留言走公开中继，因此任何人
      打开网页就能看、就能发，页面里不存任何密钥。 */
-  var RAW   = 'https://raw.githubusercontent.com/xhds5424522/liuyan-board/main/messages.json';
+  var GHAPI = 'https://api.github.com/repos/xhds5424522/liuyan-board/contents/messages.json?ref=main&_=';
+  var CDN   = 'https://cdn.jsdelivr.net/gh/xhds5424522/liuyan-board@main/messages.json?_=';
   var TOPIC = 'jidu-lyb-7h4k9vq2xw';
   var NTFY  = 'https://ntfy.sh/' + TOPIC;
   var KEEP  = 500;
@@ -327,12 +328,26 @@ footer{
     $list.innerHTML = html;
   }
 
-  /* 历史：raw.githubusercontent.com，不限流、可跨域 */
+  /* 历史：先走 API，被限流就退到 CDN，两边都能跨域 */
   function history() {
-    return fetch(RAW + '?t=' + Date.now(), { cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : []; })
-      .then(function (d) { return Array.isArray(d) ? d : []; })
-      .catch(function () { return []; });
+    return fetch(GHAPI + Date.now(), { cache: 'no-store', headers: { 'Accept': 'application/vnd.github+json' } })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (d) {
+        var raw = d && d.content ? d.content.replace(/[\n\r]/g, '') : '';
+        if (!raw) return [];
+        var txt = decodeURIComponent(escape(atob(raw)));
+        var arr = JSON.parse(txt);
+        return Array.isArray(arr) ? arr : [];
+      })
+      .catch(function () {
+        return fetch(CDN + Date.now(), { cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (d) { return Array.isArray(d) ? d : []; })
+          .catch(function () { return []; });
+      });
   }
 
   /* 最近 12 小时：公开中继，不限流 */
