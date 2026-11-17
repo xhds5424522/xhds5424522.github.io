@@ -124,6 +124,11 @@ main{position:relative;z-index:1;padding:4px 14px 0}
   max-width:62%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .at{font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums;flex:none}
+.tag{
+  display:inline-block;font-size:10px;line-height:1.5;letter-spacing:.1em;
+  color:#6f9a87;padding:1px 7px;margin:-1px 0 6px;border-radius:999px;
+  border:1px solid rgba(53,208,127,.18);background:rgba(53,208,127,.06);
+}
 .text{white-space:pre-wrap;word-break:break-word;line-height:1.66;font-size:14.5px}
 
 .empty,.err{
@@ -311,10 +316,11 @@ footer{
       $list.innerHTML = '<div class="empty"><span class="big">✎</span>还没有人留言<br>你可以是第一句</div>';
       return;
     }
-    var html = '', i, it, name, mine, fresh;
+    var html = '', i, it, name, mine, fresh, anon;
     for (i = 0; i < l.length; i++) {
       it = l[i] || {};
       name = String(it.n || '匿名').slice(0, 16);
+      anon = !name || name === '匿名';
       mine = state.mine && name === state.mine;
       fresh = state.fresh && key(it) === state.fresh;
       html += '<article class="item' + (mine ? ' mine' : '') + (fresh ? ' fresh' : '') +
@@ -323,7 +329,8 @@ footer{
         '<div class="body"><div class="meta">' +
           '<span class="name">' + esc(name) + '</span>' +
           '<span class="at">' + esc(rel(it.c)) + '</span>' +
-        '</div><div class="text">' + esc(it.t || '') + '</div></div></article>';
+        '</div>' + (anon ? '<div class="tag">黑星教徒</div>' : '') +
+        '<div class="text">' + esc(it.t || '') + '</div></div></article>';
     }
     $list.innerHTML = html;
   }
