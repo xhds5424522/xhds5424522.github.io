@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>留言板</title>
+<meta name="theme-color" content="#06080a">
+<meta name="description" content="打开就能写，所有人可见。">
+<meta name="robots" content="index,follow">
+<style>
+:root{
+  --bg:#06080a;
+  --card:rgba(20,27,31,.66);
+  --card2:rgba(28,37,42,.9);
+  --line:rgba(255,255,255,.075);
+  --fg:#e9f2ee;
+  --dim:#7b8d86;
+  --acc:#35d07f;
+  --acc2:#25b9cf;
+  --warn:#ff6b6b;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;min-height:100%}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);
+  color:var(--fg);
+  font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  padding-bottom:calc(154px + env(safe-area-inset-bottom));
+}
+body::before,body::after{
+  content:"";position:fixed;border-radius:50%;filter:blur(88px);
+  pointer-events:none;z-index:0;
+}
+body::before{
+  width:62vw;height:62vw;left:-22vw;top:-14vw;
+  background:rgba(53,208,127,.20);
+  animation:drift 19s ease-in-out infinite alternate;
+}
+body::after{
+  width:56vw;height:56vw;right:-20vw;top:16vh;
+  background:rgba(37,185,207,.15);
+  animation:drift 25s ease-in-out infinite alternate-reverse;
+}
+@keyframes drift{
+  from{transform:translate3d(0,0,0) scale(1)}
+  to{transform:translate3d(5vw,7vh,0) scale(1.16)}
+}
+
+header{
+  position:sticky;top:0;z-index:20;
+  padding:calc(14px + env(safe-area-inset-top)) 18px 13px;
+  display:flex;align-items:center;gap:12px;
+  background:linear-gradient(180deg,rgba(6,8,10,.94),rgba(6,8,10,.72) 70%,rgba(6,8,10,0));
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+}
+.brand{display:flex;flex-direction:column;gap:2px;min-width:0}
+h1{
+  margin:0;font-size:19px;font-weight:650;letter-spacing:.06em;
+  background:linear-gradient(96deg,#e9f2ee,#66e6a4 60%,#4fc8dd);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+h1 .dot{
+  display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--acc);margin-left:7px;vertical-align:2px;
+  animation:ping 2.4s ease-out infinite;
+}
+@keyframes ping{
+  0%{box-shadow:0 0 0 0 rgba(53,208,127,.5)}
+  70%{box-shadow:0 0 0 9px rgba(53,208,127,0)}
+  100%{box-shadow:0 0 0 0 rgba(53,208,127,0)}
+}
+.sub{font-size:11.5px;color:var(--dim);letter-spacing:.04em}
+
+.tools{margin-left:auto;display:flex;gap:8px;align-items:center}
+.count{
+  font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums;
+  padding:5px 10px;border:1px solid var(--line);border-radius:999px;
+  background:rgba(255,255,255,.03);
+}
+.iconbtn{
+  width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:11px;
+  background:rgba(255,255,255,.04);color:var(--dim);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-family:inherit;transition:color .18s,border-color .18s,transform .12s;
+}
+.iconbtn:active{transform:scale(.93)}
+.iconbtn.spin svg{animation:rot .7s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+main{position:relative;z-index:1;padding:4px 14px 0}
+
+.item{
+  position:relative;display:flex;gap:11px;
+  padding:14px 14px 13px;margin:9px 0;
+  border:1px solid var(--line);border-radius:16px;
+  background:var(--card);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  animation:rise .34s cubic-bezier(.2,.7,.3,1) both;
+}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.item.mine{
+  border-color:rgba(53,208,127,.34);
+  background:linear-gradient(180deg,rgba(53,208,127,.10),rgba(20,27,31,.6));
+  box-shadow:0 0 0 1px rgba(53,208,127,.10),0 8px 30px -14px rgba(53,208,127,.5);
+}
+.item.fresh{animation:pop .5s cubic-bezier(.2,.7,.3,1) both}
+@keyframes pop{
+  0%{transform:scale(.96);opacity:.3}
+  60%{transform:scale(1.012)}
+  100%{transform:none;opacity:1}
+}
+.ava{
+  flex:none;width:34px;height:34px;border-radius:11px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:650;color:#04120b;user-select:none;
+}
+.body{min-width:0;flex:1}
+.meta{display:flex;align-items:baseline;gap:9px;margin-bottom:4px}
+.name{
+  font-size:13px;font-weight:600;color:var(--fg);
+  max-width:62%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.at{font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums;flex:none}
+.text{white-space:pre-wrap;word-break:break-word;line-height:1.66;font-size:14.5px}
+
+.empty,.err{
+  text-align:center;color:var(--dim);padding:64px 22px;font-size:13.5px;line-height:1.8;
+}
+.empty .big{font-size:30px;display:block;margin-bottom:12px;opacity:.5}
+.err{color:var(--warn)}
+.err button{
+  margin-top:14px;padding:9px 20px;border-radius:10px;font-family:inherit;font-size:13px;
+  border:1px solid rgba(255,107,107,.4);background:rgba(255,107,107,.1);color:var(--warn);
+}
+
+.sk{margin:9px 0;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--card);display:flex;gap:11px}
+.sk .a{width:34px;height:34px;border-radius:11px;flex:none}
+.sk .b{flex:1}
+.sk i{
+  display:block;height:10px;border-radius:6px;
+  background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.11),rgba(255,255,255,.05));
+  background-size:200% 100%;animation:sh 1.3s ease-in-out infinite;
+}
+.sk .b i:first-child{width:34%;margin-bottom:9px}
+@keyframes sh{from{background-position:200% 0}to{background-position:-200% 0}}
+
+.composer{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;
+  padding:11px 13px calc(11px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(6,8,10,0),rgba(6,8,10,.93) 26%);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-top:1px solid var(--line);
+}
+.field{
+  border:1px solid var(--line);border-radius:15px;background:var(--card2);
+  padding:9px 11px;transition:border-color .2s,box-shadow .2s;
+}
+.field:focus-within{border-color:rgba(53,208,127,.42);box-shadow:0 0 0 3px rgba(53,208,127,.10)}
+input,textarea{
+  width:100%;border:0;background:none;color:var(--fg);font-family:inherit;
+  font-size:14.5px;outline:none;resize:none;line-height:1.55;
+}
+input{font-size:13px;padding:2px 0 7px;border-bottom:1px solid var(--line);border-radius:0}
+input::placeholder,textarea::placeholder{color:#5c6b66}
+textarea{margin-top:8px;height:52px;max-height:120px;padding:0}
+.bar{display:flex;align-items:center;gap:10px;margin-top:8px}
+.tip{font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
+.tip b{color:var(--acc);font-weight:600}
+.tip.warn b{color:var(--warn)}
+#send{
+  margin-left:auto;flex:none;
+  padding:9px 22px;border:0;border-radius:11px;
+  font-family:inherit;font-size:14px;font-weight:650;color:#04120b;
+  background:linear-gradient(135deg,#4ee89a,#20b9cf);
+  box-shadow:0 6px 22px -10px rgba(53,208,127,.9);
+  transition:transform .12s,opacity .2s,filter .2s;
+}
+#send:active{transform:scale(.96)}
+#send:disabled{opacity:.45;filter:grayscale(.4);box-shadow:none}
+
+.toast{
+  position:fixed;left:50%;bottom:calc(182px + env(safe-area-inset-bottom));
+  transform:translate(-50%,14px);z-index:60;max-width:82vw;
+  padding:10px 18px;border-radius:12px;
+  background:rgba(24,32,36,.96);border:1px solid var(--line);
+  color:var(--fg);font-size:13px;text-align:center;
+  opacity:0;pointer-events:none;transition:opacity .24s,transform .24s;
+  box-shadow:0 12px 40px -12px rgba(0,0,0,.9);
+}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast.bad{border-color:rgba(255,107,107,.45);color:#ffb3b3}
+
+footer{
+  position:relative;z-index:1;text-align:center;color:#465450;font-size:11px;
+  padding:22px 20px 8px;letter-spacing:.03em;line-height:1.9;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>留言板<i class="dot"></i></h1>
+    <div class="sub">打开就能写 · 所有人可见</div>
+  </div>
+  <div class="tools">
+    <span class="count" id="count">—</span>
+    <button class="iconbtn" id="refresh" aria-label="刷新">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round">
+        <path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<main id="list"></main>
+
+<footer>留言公开可见 · 永久保存 · 别留手机号地址</footer>
+
+<div class="composer">
+  <div class="field">
+    <input id="name" maxlength="16" placeholder="昵称（可空，默认匿名）" autocomplete="off">
+    <textarea id="text" maxlength="300" placeholder="说点什么…"></textarea>
+    <div class="bar">
+      <span class="tip" id="tip"><b>0</b>/300</span>
+      <button id="send">发送</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* 历史存档在公开仓库里；最近 12 小时的留言走公开中继，因此任何人
+     打开网页就能看、就能发，页面里不存任何密钥。 */
+  var RAW   = 'https://raw.githubusercontent.com/xhds5424522/liuyan-board/main/messages.json';
+  var TOPIC = 'jidu-lyb-7h4k9vq2xw';
+  var NTFY  = 'https://ntfy.sh/' + TOPIC;
+  var KEEP  = 500;
+
+  var $list  = document.getElementById('list');
+  var $count = document.getElementById('count');
+  var $name  = document.getElementById('name');
+  var $text  = document.getElementById('text');
+  var $tip   = document.getElementById('tip');
+  var $send  = document.getElementById('send');
+  var $toast = document.getElementById('toast');
+  var $rf    = document.getElementById('refresh');
+
+  var state = { list: [], busy: false, mine: '', fresh: '', seen: {} };
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function key(it) { return (it.n || '') + '\u0001' + (it.c || '') + '\u0001' + (it.t || ''); }
+
+  function tsOf(c) {
+    var n = Number(c) || 0;
+    return n > 0 && n < 1e11 ? n * 1000 : n;
+  }
+  function rel(c) {
+    var t = tsOf(c);
+    if (!t) return '';
+    var s = Math.floor((Date.now() - t) / 1000);
+    if (s < 5) return '刚刚';
+    if (s < 60) return s + ' 秒前';
+    if (s < 3600) return Math.floor(s / 60) + ' 分钟前';
+    if (s < 86400) return Math.floor(s / 3600) + ' 小时前';
+    if (s < 2592000) return Math.floor(s / 86400) + ' 天前';
+    var d = new Date(t);
+    return (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日';
+  }
+  function hue(s) {
+    var h = 0, i;
+    for (i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
+    return h;
+  }
+  function avaStyle(name) {
+    var h = hue(name || '匿名');
+    return 'background:linear-gradient(135deg,hsl(' + h + ',72%,62%),hsl(' + ((h + 46) % 360) + ',76%,52%))';
+  }
+  function toast(msg, bad) {
+    $toast.textContent = msg;
+    $toast.className = 'toast on' + (bad ? ' bad' : '');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { $toast.className = 'toast' + (bad ? ' bad' : ''); }, 2600);
+  }
+
+  function skeleton() {
+    var h = '';
+    for (var i = 0; i < 4; i++) {
+      h += '<div class="sk"><div class="a"></div><div class="b"><i></i><i></i></div></div>';
+    }
+    $list.innerHTML = h;
+  }
+
+  function render() {
+    var l = state.list;
+    $count.textContent = l.length ? (l.length + ' 条') : '空';
+    if (!l.length) {
+      $list.innerHTML = '<div class="empty"><span class="big">✎</span>还没有人留言<br>你可以是第一句</div>';
+      return;
+    }
+    var html = '', i, it, name, mine, fresh;
+    for (i = 0; i < l.length; i++) {
+      it = l[i] || {};
+      name = String(it.n || '匿名').slice(0, 16);
+      mine = state.mine && name === state.mine;
+      fresh = state.fresh && key(it) === state.fresh;
+      html += '<article class="item' + (mine ? ' mine' : '') + (fresh ? ' fresh' : '') +
+        '" style="animation-delay:' + (fresh ? 0 : Math.min(i * 22, 260)) + 'ms">' +
+        '<div class="ava" style="' + avaStyle(name) + '">' + esc(name.charAt(0) || '匿') + '</div>' +
+        '<div class="body"><div class="meta">' +
+          '<span class="name">' + esc(name) + '</span>' +
+          '<span class="at">' + esc(rel(it.c)) + '</span>' +
+        '</div><div class="text">' + esc(it.t || '') + '</div></div></article>';
+    }
+    $list.innerHTML = html;
+  }
+
+  /* 历史：raw.githubusercontent.com，不限流、可跨域 */
+  function history() {
+    return fetch(RAW + '?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (d) { return Array.isArray(d) ? d : []; })
+      .catch(function () { return []; });
+  }
+
+  /* 最近 12 小时：公开中继，不限流 */
+  function recent() {
+    return fetch(NTFY + '/json?poll=1&since=all', { cache: 'no-store' })
+      .then(function (r) { return r.text(); })
+      .then(function (txt) {
+        var out = [], lines = txt.split('\n'), i, o, m;
+        for (i = 0; i < lines.length; i++) {
+          if (!lines[i]) continue;
+          try { o = JSON.parse(lines[i]); } catch (e) { continue; }
+          if (!o || o.event !== 'message' || !o.message) continue;
+          try { m = JSON.parse(o.message); } catch (e) { continue; }
+          if (!m || typeof m !== 'object') continue;
+          var t = String(m.t || '').slice(0, 300);
+          if (!t) continue;
+          out.push({ n: String(m.n || '匿名').slice(0, 16), t: t, c: Number(m.c) || o.time * 1000 });
+        }
+        return out;
+      })
+      .catch(function () { return []; });
+  }
+
+  function merge(a, b) {
+    var map = {}, out = [], i, k, it;
+    for (i = 0; i < a.length; i++) { it = a[i]; if (!it || !it.t) continue; map[key(it)] = it; }
+    for (i = 0; i < b.length; i++) { it = b[i]; if (!it || !it.t) continue; map[key(it)] = it; }
+    for (k in map) if (Object.prototype.hasOwnProperty.call(map, k)) out.push(map[k]);
+    out.sort(function (x, y) { return tsOf(y.c) - tsOf(x.c); });
+    return out.slice(0, KEEP);
+  }
+
+  function load(silent) {
+    if (!silent) skeleton();
+    $rf.classList.add('spin');
+    return Promise.all([history(), recent()]).then(function (r) {
+      var merged = merge(r[0], r[1]);
+      var sig = JSON.stringify(merged);
+      if (sig !== state.sig || !silent) {
+        state.sig = sig;
+        state.list = merged;
+        render();
+      }
+    }).catch(function (e) {
+      if (!silent) {
+        $list.innerHTML = '<div class="err">读不到留言：' + esc(e.message) +
+          '<br><button id="retry">重试</button></div>';
+        var b = document.getElementById('retry');
+        if (b) b.onclick = function () { load(); };
+      }
+    }).then(function () {
+      $rf.classList.remove('spin');
+    });
+  }
+
+  function submit() {
+    if (state.busy) return;
+    var text = $text.value.trim();
+    if (!text) { toast('先写点内容', true); $text.focus(); return; }
+
+    var name = ($name.value.trim() || '匿名').slice(0, 16);
+    if ($name.value.trim()) { try { localStorage.setItem('ly_name', name); } catch (e) {} }
+
+    state.busy = true;
+    $send.disabled = true;
+    $send.textContent = '发送中';
+
+    var item = { n: name, t: text, c: Date.now() };
+
+    fetch(NTFY, { method: 'POST', body: JSON.stringify(item) })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        state.mine = name;
+        state.fresh = key(item);
+        state.list = merge([item], state.list);
+        state.sig = JSON.stringify(state.list);
+        render();
+        $text.value = '';
+        syncTip();
+        toast('已发出 — 所有人现在就能看见');
+      })
+      .catch(function (e) {
+        toast('发送失败：' + e.message + '（换个网络再试）', true);
+      })
+      .then(function () {
+        state.busy = false;
+        $send.disabled = false;
+        $send.textContent = '发送';
+      });
+  }
+
+  function syncTip() {
+    var n = $text.value.length;
+    $tip.innerHTML = '<b>' + n + '</b>/300';
+    $tip.className = 'tip' + (n > 270 ? ' warn' : '');
+  }
+
+  $send.addEventListener('click', submit);
+  $rf.addEventListener('click', function () { load(); });
+  $text.addEventListener('input', syncTip);
+  $text.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit();
+  });
+  $text.addEventListener('focus', function () {
+    setTimeout(function () { $text.scrollIntoView({ block: 'nearest' }); }, 260);
+  });
+
+  /* 每 25 秒只拉中继（增量、不限流）；历史只在打开和手动刷新时读 */
+  setInterval(function () {
+    if (document.visibilityState !== 'visible' || state.busy) return;
+    recent().then(function (r) {
+      var merged = merge(r, state.list);
+      if (JSON.stringify(merged) !== state.sig) {
+        state.list = merged;
+        state.sig = JSON.stringify(merged);
+        render();
+      }
+    });
+  }, 25000);
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') load(true);
+  });
+
+  try { state.mine = localStorage.getItem('ly_name') || ''; } catch (e) {}
+  if (state.mine) $name.value = state.mine;
+  syncTip();
+  load();
+
+  setInterval(function () {
+    if (state.list.length && !state.busy) render();
+  }, 60000);
+})();
+</script>
+</body>
+</html>
